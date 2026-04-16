@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<title>SCM INPUT TOOL</title>
+
+<style>
+body{
+    background:#0b0f14;
+    color:#00ff9c;
+    font-family:monospace;
+    padding:15px;
+}
+.container{
+    max-width:800px;
+    margin:auto;
+}
+h2{
+    text-align:center;
+    color:#00e0ff;
+}
+input,textarea{
+    width:100%;
+    padding:10px;
+    margin-top:10px;
+    background:black;
+    color:#00ff9c;
+    border:1px solid #00ff9c;
+    font-family:monospace;
+}
+textarea{
+    height:260px;
+}
+button{
+    width:100%;
+    padding:10px;
+    margin-top:8px;
+    background:#001f2f;
+    color:#00e0ff;
+    border:none;
+    cursor:pointer;
+}
+.row{
+    display:flex;
+    gap:5px;
+}
+.row button{
+    flex:1;
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+<h2>SCM INPUT TOOL</h2>
+
+<input id="inputBox" placeholder="Paste Excel / nhập chữ + số không giới hạn">
+
+<div class="row">
+<button onclick="copyData()">COPY</button>
+<button onclick="downloadTxt()">TXT</button>
+<button onclick="clearAll()">CLEAR</button>
+</div>
+
+<textarea id="output" readonly></textarea>
+
+<p>TOTAL: <span id="total">0</span></p>
+</div>
+
+<script>
+let list = [];
+
+/* ===== DATE ===== */
+function formatDate(){
+    const now = new Date();
+    const d = String(now.getDate()).padStart(2,'0');
+    const h = String(now.getHours()).padStart(2,'0');
+    const m = String(now.getMinutes()).padStart(2,'0');
+
+    const months=["JAN","FEB","MAR","APR","MAY","JUN",
+                  "JUL","AUG","SEP","OCT","NOV","DEC"];
+
+    return `${d}${months[now.getMonth()]}/${h}${m}`;
+}
+
+/* ===== RULE PROCESS ===== */
+function process(input){
+    if(!input) return null;
+
+    input = input.trim().toUpperCase();
+
+    // chỉ cho phép chữ + số
+    if(!/^[A-Z0-9]+$/.test(input)) return null;
+
+    let suffix = "VJ";
+
+    if(input.startsWith("000") || input.startsWith("00")){
+        suffix = "QH";
+    }
+    else if(input.startsWith("0")){
+        suffix = "JE";
+    }
+    else if(input.startsWith("2")){
+        suffix = "VJ";
+    }
+
+    return input + suffix;
+}
+
+/* ===== RENDER ===== */
+function render(){
+    let result = "SCM/1\n";
+    result += "SGN." + formatDate() + " ";
+
+    if(list.length > 0) result += ".AKE.";
+
+    let rows = [];
+    let temp = [];
+
+    list.forEach(item=>{
+        temp.push(item);
+        if(temp.length === 6){
+            rows.push(temp.join("/"));
+            temp=[];
+        }
+    });
+
+    if(temp.length) rows.push(temp.join("/"));
+
+    rows.forEach((r,i)=>{
+        if(i===0){
+            result += r;
+        }else{
+            result += "\n/" + r;
+        }
+    });
+
+    output.value = result;
+    total.innerText = list.length;
+}
+
+/* ===== INPUT (paste Excel / nhiều dòng) ===== */
+inputBox.addEventListener("input",function(){
+    let values = this.value.split(/\s+/);
+
+    values.forEach(v=>{
+        let r = process(v);
+        if(r) list.push(r);
+    });
+
+    this.value="";
+    render();
+});
+
+/* ===== COPY ===== */
+function copyData(){
+    navigator.clipboard.writeText(output.value);
+    alert("Copied!");
+}
+
+/* ===== DOWNLOAD TXT ===== */
+function downloadTxt(){
+    let blob = new Blob([output.value],{type:"text/plain"});
+    let a=document.createElement("a");
+    a.href=URL.createObjectURL(blob);
+    a.download="SCM.txt";
+    a.click();
+}
+
+/* ===== CLEAR ===== */
+function clearAll(){
+    if(confirm("Clear all?")){
+        list=[];
+        render();
+    }
+}
+
+render();
+</script>
+
+</body>
+</html>
